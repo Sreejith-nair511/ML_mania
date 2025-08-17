@@ -1,51 +1,82 @@
-# app.py
-
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
+import numpy as np
+import joblib
+import os
 
-# ===============================
-# F1 WINNER PREDICTION APP (2025-2026)
-# ===============================
+# ======================
+# LOAD MODEL
+# ======================
+@st.cache_resource
+def load_model():
+    try:
+        model = joblib.load("model.pkl")  # Make sure model.pkl is in repo root
+        return model
+    except Exception as e:
+        st.error(f"❌ Error loading model: {e}")
+        return None
 
-# Page Config
-st.set_page_config(page_title="F1 Winner Prediction", page_icon="🏎️", layout="wide")
+model = load_model()
 
-# Title
-st.title("🏆 Formula 1 Constructor Winner Prediction (2025 - 2026)")
-st.write("This app shows **simulated winning probabilities** for F1 constructors in 2025 & 2026.")
+# ======================
+# APP CONFIG
+# ======================
+st.set_page_config(
+    page_title="🏎️ F1 Race Predictor",
+    page_icon="🏁",
+    layout="wide"
+)
 
-# Dataset
-data = {
-    "Year": [2025, 2025, 2025, 2025,
-             2026, 2026, 2026, 2026],
-    "Team": ["McLaren", "Ferrari", "Red Bull", "Mercedes",
-             "McLaren", "Mercedes", "Ferrari", "Red Bull"],
-    "Win_Probability": [0.40, 0.25, 0.20, 0.15,   # 2025 predictions
-                        0.35, 0.30, 0.20, 0.15]   # 2026 predictions
-}
-df = pd.DataFrame(data)
+st.title("🏎️ Formula 1 Race Prediction")
+st.markdown("This app predicts **Formula 1 race results** based on input data. 🚦")
 
-# Sidebar Year Selection
-st.sidebar.header("Select Year")
-year_selected = st.sidebar.radio("Choose a season:", [2025, 2026])
+# ======================
+# INPUT FORM
+# ======================
+with st.form("prediction_form"):
+    st.subheader("Enter Race Details")
 
-# Filter Dataset
-df_year = df[df["Year"] == year_selected]
+    driver = st.selectbox("Select Driver", [
+        "Max Verstappen", "Lewis Hamilton", "Charles Leclerc", "Lando Norris", "Fernando Alonso"
+    ])
 
-# Show Dataset
-st.subheader(f"📊 Prediction Dataset for {year_selected}")
-st.dataframe(df_year)
+    team = st.selectbox("Select Team", [
+        "Red Bull", "Mercedes", "Ferrari", "McLaren", "Aston Martin"
+    ])
 
-# Plot Graph
-fig, ax = plt.subplots(figsize=(8,6))
-ax.bar(df_year["Team"], df_year["Win_Probability"],
-       color="orange" if year_selected == 2025 else "skyblue")
-ax.set_title(f"F1 Constructor Predicted Winner Chances - {year_selected}")
-ax.set_xlabel("Teams")
-ax.set_ylabel("Winning Probability")
-st.pyplot(fig)
+    quali_pos = st.number_input("Qualifying Position", min_value=1, max_value=20, value=5)
 
-# Predicted Winner
-winner = df_year.loc[df_year["Win_Probability"].idxmax()]["Team"]
-st.success(f"🏆 Predicted Winner {year_selected}: **{winner}**")
+    weather = st.selectbox("Weather", ["Sunny", "Rainy", "Cloudy", "Mixed"])
+
+    track_type = st.selectbox("Track Type", ["Street Circuit", "Race Track", "High Speed", "Technical"])
+
+    submit = st.form_submit_button("Predict")
+
+# ======================
+# PREDICTION
+# ======================
+if submit:
+    if model is None:
+        st.error("⚠️ Model not loaded. Please check `model.pkl` in your repo.")
+    else:
+        # Dummy encoding (replace with actual preprocessing used during training)
+        input_data = pd.DataFrame([{
+            "driver": driver,
+            "team": team,
+            "quali_pos": quali_pos,
+            "weather": weather,
+            "track_type": track_type
+        }])
+
+        # NOTE: Preprocessing must match training! Replace with your pipeline
+        try:
+            prediction = model.predict(input_data)[0]
+            st.success(f"🏁 Predicted Race Result: **{prediction}**")
+        except Exception as e:
+            st.error(f"❌ Prediction failed: {e}")
+
+# ======================
+# FOOTER
+# ======================
+st.markdown("---")
+st.caption("Built with ❤️ using Streamlit | F1 Prediction Demo")
