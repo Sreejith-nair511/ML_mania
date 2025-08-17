@@ -13,7 +13,7 @@ data = {
     "Team": ["McLaren", "Red Bull", "Ferrari", "Mercedes", "Aston Martin",
              "McLaren", "Red Bull", "Ferrari", "Mercedes", "Aston Martin"],
     "Win_Probability": [0.40, 0.25, 0.15, 0.12, 0.08,   # 2025 predictions
-                        0.30, 0.28, 0.25, 0.12, 0.05]   # 2026 predictions
+                        0.30, 0.08, 0.25, 0.32, 0.05]   # 2026 predictions
 }
 
 df = pd.DataFrame(data)
