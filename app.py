@@ -1,82 +1,55 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
-import joblib
-import os
+import matplotlib
+matplotlib.use("Agg")  # important for Streamlit Cloud
+import matplotlib.pyplot as plt
 
-# ======================
-# LOAD MODEL
-# ======================
-@st.cache_resource
-def load_model():
-    try:
-        model = joblib.load("model.pkl")  # Make sure model.pkl is in repo root
-        return model
-    except Exception as e:
-        st.error(f"❌ Error loading model: {e}")
-        return None
+# ===============================
+# DATASET
+# ===============================
+data = {
+    "Year": [2025, 2025, 2025, 2025, 2025,
+             2026, 2026, 2026, 2026, 2026],
+    "Team": ["McLaren", "Red Bull", "Ferrari", "Mercedes", "Aston Martin",
+             "McLaren", "Red Bull", "Ferrari", "Mercedes", "Aston Martin"],
+    "Win_Probability": [0.40, 0.25, 0.15, 0.12, 0.08,   # 2025 predictions
+                        0.30, 0.28, 0.25, 0.12, 0.05]   # 2026 predictions
+}
 
-model = load_model()
+df = pd.DataFrame(data)
 
-# ======================
-# APP CONFIG
-# ======================
-st.set_page_config(
-    page_title="🏎️ F1 Race Predictor",
-    page_icon="🏁",
-    layout="wide"
-)
+# ===============================
+# STREAMLIT APP
+# ===============================
+st.set_page_config(page_title="🏎️ F1 Winner Prediction", page_icon="🏁", layout="wide")
 
-st.title("🏎️ Formula 1 Race Prediction")
-st.markdown("This app predicts **Formula 1 race results** based on input data. 🚦")
+st.title("🏎️ Formula 1 Winner Predictions (2025-2026)")
+st.write("This app shows **predicted winning probabilities** for Formula 1 constructors in 2025 & 2026.")
 
-# ======================
-# INPUT FORM
-# ======================
-with st.form("prediction_form"):
-    st.subheader("Enter Race Details")
+# Sidebar
+year_choice = st.sidebar.selectbox("Select Year", [2025, 2026])
 
-    driver = st.selectbox("Select Driver", [
-        "Max Verstappen", "Lewis Hamilton", "Charles Leclerc", "Lando Norris", "Fernando Alonso"
-    ])
+# Filter data
+df_selected = df[df["Year"] == year_choice]
 
-    team = st.selectbox("Select Team", [
-        "Red Bull", "Mercedes", "Ferrari", "McLaren", "Aston Martin"
-    ])
+# Plot
+fig, ax = plt.subplots(figsize=(8,6))
+ax.bar(df_selected["Team"], df_selected["Win_Probability"], 
+       color="orange" if year_choice == 2025 else "skyblue")
+ax.set_title(f"F1 Predicted Winner Chances - {year_choice}")
+ax.set_xlabel("Teams")
+ax.set_ylabel("Winning Probability")
 
-    quali_pos = st.number_input("Qualifying Position", min_value=1, max_value=20, value=5)
+st.pyplot(fig)
 
-    weather = st.selectbox("Weather", ["Sunny", "Rainy", "Cloudy", "Mixed"])
+# Show dataset
+with st.expander("📊 Show Dataset"):
+    st.dataframe(df_selected)
 
-    track_type = st.selectbox("Track Type", ["Street Circuit", "Race Track", "High Speed", "Technical"])
+# Predicted Winner
+winner = df_selected.loc[df_selected["Win_Probability"].idxmax()]["Team"]
+st.success(f"🏆 Predicted Winner {year_choice}: **{winner}**")
 
-    submit = st.form_submit_button("Predict")
-
-# ======================
-# PREDICTION
-# ======================
-if submit:
-    if model is None:
-        st.error("⚠️ Model not loaded. Please check `model.pkl` in your repo.")
-    else:
-        # Dummy encoding (replace with actual preprocessing used during training)
-        input_data = pd.DataFrame([{
-            "driver": driver,
-            "team": team,
-            "quali_pos": quali_pos,
-            "weather": weather,
-            "track_type": track_type
-        }])
-
-        # NOTE: Preprocessing must match training! Replace with your pipeline
-        try:
-            prediction = model.predict(input_data)[0]
-            st.success(f"🏁 Predicted Race Result: **{prediction}**")
-        except Exception as e:
-            st.error(f"❌ Prediction failed: {e}")
-
-# ======================
-# FOOTER
-# ======================
+# Footer
 st.markdown("---")
-st.caption("Built with ❤️ using Streamlit | F1 Prediction Demo")
+st.caption("Built with ❤️ using Streamlit | Demo F1 Prediction")
